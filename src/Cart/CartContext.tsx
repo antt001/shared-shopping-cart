@@ -1,4 +1,8 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { auth, firestore as db } from '../firebase-config';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { onAuthStateChanged, User } from 'firebase/auth';
+
 
 interface CartItem {
   id: string;
@@ -20,10 +24,43 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true); // Loading state
 
-  // const addItem = (item: CartItem) => {
-  //   setCartItems((prevItems) => [...prevItems, item]);
-  // };
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        loadCart(currentUser.uid);
+      } else {
+        setLoading(false); // No user, loading complete
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (user && !loading) {
+      saveCart(user.uid, cartItems);
+    }
+  }, [cartItems, user, loading]);
+
+  const loadCart = async (userId: string) => {
+    console.log('Loading cart for user:', userId);
+    const cartDoc = await getDoc(doc(db, 'carts', userId));
+    if (cartDoc.exists()) {
+      const loadedItems = cartDoc.data().items
+      console.log('Cart loaded items:', loadedItems.length, loadedItems.items);
+      setCartItems(loadedItems || []);
+    }
+    setLoading(false); // Loading complete
+  };
+
+  const saveCart = async (userId: string, items: CartItem[]) => {
+    await setDoc(doc(db, 'carts', userId), { items });
+  };
+
   const addItem = (item: CartItem) => {
     setCartItems((prevItems) => {
       const existingItem = prevItems.find(cartItem => cartItem.id === item.id);

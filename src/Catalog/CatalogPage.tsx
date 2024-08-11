@@ -6,6 +6,7 @@ import { firestore as db } from '../firebase-config';
 import Header from '../Components/Header';
 import { CartSidebar } from '../Cart/CartSidebar';
 import { useDisclosure } from '@mantine/hooks';
+import Toast from '../Components/Toast';
 
 const ITEMS_PER_PAGE = 25;
 
@@ -15,6 +16,7 @@ export function CatalogPage() {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [opened, { open, close }] = useDisclosure(false);
+  const [notification, setNotification] = useState('');
 
   // Use media queries to determine the number of columns based on screen size
   // const columns = useMediaQuery('(min-width: 1200px)') ? 4 : useMediaQuery('(min-width: 992px)') ? 3 : useMediaQuery('(min-width: 768px)') ? 2 : 1;
@@ -42,6 +44,12 @@ export function CatalogPage() {
     fetchItems();
   }, []);
 
+  useEffect(() => {
+    if (notification != "") {
+      setTimeout(() => setNotification(""), 2000);
+    }
+  }, [notification]);
+
   const handleScroll = (e: any) => {
     if (loading || !hasMore) return;
     const { scrollTop, scrollHeight, clientHeight } = e.target;
@@ -50,9 +58,17 @@ export function CatalogPage() {
     }
   };
 
+  const notify = (message: string) => {
+    if (message == "") return <></>;
+    return (
+      <Toast message={message} />
+    )
+  };
+
   return (
     <>
       <Header onCartOpen={() => open()} />
+      {notify(notification)}
       <Flex
         onScroll={handleScroll}
         style={{ height: '100vh', overflowY: 'scroll' }}
@@ -66,7 +82,7 @@ export function CatalogPage() {
         </Grid>
         {loading && <Loader />}
       </Flex>
-      <CartSidebar opened={opened} onClose={() => close()} />
+      <CartSidebar opened={opened} onClose={() => close()} notify={setNotification}/>
     </>
   );
 }

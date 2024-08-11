@@ -1,10 +1,14 @@
 import React from 'react';
 import { Drawer, Button, Group, Text, NumberInput, ActionIcon } from '@mantine/core';
-import { IconTrash, IconCheck } from '@tabler/icons-react';
+import { IconTrash } from '@tabler/icons-react';
 import { useCart } from './CartContext';
-import { showNotification } from '@mantine/notifications';
 
-export const CartSidebar: React.FC<{ opened: boolean; onClose: () => void }> = ({ opened, onClose }) => {
+interface CartSidebarProps {
+  opened: boolean;
+  onClose: () => void;
+  notify: (message: string) => void;
+}
+export const CartSidebar: React.FC<CartSidebarProps> = ({ opened, onClose, notify }) => {
   const { cartItems, updateItemQuantity, removeItem, clearCart, subtotal } = useCart();
 
   // Create a currency number formatter.
@@ -19,25 +23,13 @@ export const CartSidebar: React.FC<{ opened: boolean; onClose: () => void }> = (
 
   const handleClearCart = () => {
     clearCart();
-    showNotification({
-      title: 'Cart Cleared',
-      message: 'Your cart has been cleared successfully.',
-      icon: <IconCheck />,
-      color: 'green',
-      styles: {
-        root: { position: 'absolute', top: 0, right: 0 },}
-    });
+    notify('Cart Cleared');
     onClose();
   };
 
   const handleCheckout = () => {
     clearCart();
-    showNotification({
-      title: 'Checkout Successful',
-      message: 'Thank you for your purchase! Your order is being processed.',
-      icon: <IconCheck />,
-      color: 'green',
-    });
+    notify('Checkout Successful');
     onClose();
     // You can add further checkout logic here if needed
   };
