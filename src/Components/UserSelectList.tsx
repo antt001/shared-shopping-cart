@@ -6,16 +6,19 @@ import { IconX } from '@tabler/icons-react';
 import { useAuth } from '../Auth/AuthContext';
 
 interface UserSelectListProps {
+  cartUsers: string[];
   onClose: () => void;
+  setCartUsers: (users: string[]) => void;
 }
 
 export const UserSelectList: React.FC<UserSelectListProps> = ({
+  setCartUsers,
+  cartUsers,
   onClose
 }) => {
 
   const { user } = useAuth();
   const [userOptions, setUserOptions] = useState<{ label: string; value: string }[]>([]);
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
   const loadUsers = async () => {
     const usersCollection = collection(db, 'userRoles');
@@ -33,20 +36,20 @@ export const UserSelectList: React.FC<UserSelectListProps> = ({
   }, []);
 
   const handleShareSubmit = async () => {
-    if (selectedUsers.length > 0) {
+    if (cartUsers.length > 0) {
       await updateDoc(doc(db, 'carts', user.uid), {
-        users: arrayUnion(...selectedUsers)
+        users: arrayUnion(...cartUsers)
       });
-      console.log('Shared cart with users:', selectedUsers);
+      console.log('Shared cart with users:', cartUsers);
     }
     onClose();
   };
 
   const handleCheckboxChange = (value: string) => {
-    if (selectedUsers.includes(value)) {
-      setSelectedUsers(selectedUsers.filter(user => user !== value));
+    if (cartUsers.includes(value)) {
+      setCartUsers(cartUsers.filter(user => user !== value));
     } else {
-      setSelectedUsers([...selectedUsers, value]);
+      setCartUsers([...cartUsers, value]);
     }
   };
 
@@ -69,7 +72,7 @@ export const UserSelectList: React.FC<UserSelectListProps> = ({
             p={5}
             key={user.value}
             label={user.label}
-            checked={selectedUsers.includes(user.value)}
+            checked={cartUsers.includes(user.value)}
             onChange={() => handleCheckboxChange(user.value)}
           />
         ))}

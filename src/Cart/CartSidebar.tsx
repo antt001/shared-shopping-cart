@@ -1,5 +1,5 @@
 import React from 'react';
-import { Drawer, Button, Group, Text, NumberInput, ActionIcon } from '@mantine/core';
+import { Drawer, Button, Group, Text, NumberInput, ActionIcon, Select } from '@mantine/core';
 import { IconTrash, IconShare, IconArrowRight } from '@tabler/icons-react';
 import { useCart } from './CartContext';
 import { useDisclosure } from '@mantine/hooks';
@@ -11,7 +11,18 @@ interface CartSidebarProps {
   notify: (message: string) => void;
 }
 export const CartSidebar: React.FC<CartSidebarProps> = ({ opened, onClose, notify }) => {
-  const { cartItems, updateItemQuantity, removeItem, clearCart, subtotal } = useCart();
+  const { 
+    cartUsers,
+    cartItems, 
+    userCarts,
+    selectedCart,
+    updateItemQuantity, 
+    removeItem, 
+    clearCart, 
+    setCartUsers,
+    selectCart,
+    subtotal 
+  } = useCart();
   const [shareOpened, { open, close }] = useDisclosure(false);
 
   // Create a currency number formatter.
@@ -37,6 +48,15 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ opened, onClose, notif
     // You can add further checkout logic here if needed
   };
 
+  const handleCartChange = (value: string|null) => {
+    console.log('Cart selected:', value);
+    if (value) {
+      selectCart(value);
+    }
+  };
+
+  const sharedCarts = Object.keys(userCarts);
+
   return (
     <Drawer opened={opened} onClose={onClose}
       title="Your Cart"
@@ -47,6 +67,16 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ opened, onClose, notif
         inner: { position: 'absolute', top: 0, right: 0 },
       }}
     >
+      {sharedCarts.length > 0 && (
+        <Select
+          label="Select Cart"
+          placeholder="Select a cart"
+          value={selectedCart}
+          onChange={handleCartChange}
+          data={sharedCarts.map(cart => ({ value: cart, label: cart }))}
+          mb="md"
+        />
+      )}
       {cartItems.length === 0 ? (
         <Text ta="center" c="dimmed">Your cart is empty</Text>
       ) : (
@@ -60,7 +90,10 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ opened, onClose, notif
           >Share Cart</Button>
           </Group>
           { shareOpened && <UserSelectList 
-            onClose={close} /> }
+              setCartUsers={setCartUsers}
+              cartUsers={cartUsers}
+              onClose={close} /> 
+          }
           {cartItems.map((item, key) => (
             <Group grow key={key} gap="xs" justify="space-between" mb="sm">
               <Text truncate="end">{item.name}</Text>
