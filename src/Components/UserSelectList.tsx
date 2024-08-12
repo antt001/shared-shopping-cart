@@ -7,12 +7,10 @@ import { useAuth } from '../Auth/AuthContext';
 
 interface UserSelectListProps {
   onClose: () => void;
-  onShareSubmit: () => void;
 }
 
 export const UserSelectList: React.FC<UserSelectListProps> = ({
-  onClose,
-  onShareSubmit
+  onClose
 }) => {
 
   const { user } = useAuth();

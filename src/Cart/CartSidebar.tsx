@@ -60,7 +60,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ opened, onClose, notif
           >Share Cart</Button>
           </Group>
           { shareOpened && <UserSelectList 
-            onClose={close} onShareSubmit={handleCheckout} /> }
+            onClose={close} /> }
           {cartItems.map((item, key) => (
             <Group grow key={key} gap="xs" justify="space-between" mb="sm">
               <Text truncate="end">{item.name}</Text>
