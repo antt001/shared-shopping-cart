@@ -58,7 +58,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const saveCart = async (userId: string, items: CartItem[]) => {
-    await setDoc(doc(db, 'carts', userId), { items });
+    await setDoc(doc(db, 'carts', userId), { items }, { merge: true });
   };
 
   const addItem = (item: CartItem) => {

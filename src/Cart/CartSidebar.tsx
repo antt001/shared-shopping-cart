@@ -1,7 +1,9 @@
 import React from 'react';
 import { Drawer, Button, Group, Text, NumberInput, ActionIcon } from '@mantine/core';
-import { IconTrash } from '@tabler/icons-react';
+import { IconTrash, IconShare, IconArrowRight } from '@tabler/icons-react';
 import { useCart } from './CartContext';
+import { useDisclosure } from '@mantine/hooks';
+import { UserSelectList } from '../Components/UserSelectList';
 
 interface CartSidebarProps {
   opened: boolean;
@@ -10,6 +12,7 @@ interface CartSidebarProps {
 }
 export const CartSidebar: React.FC<CartSidebarProps> = ({ opened, onClose, notify }) => {
   const { cartItems, updateItemQuantity, removeItem, clearCart, subtotal } = useCart();
+  const [shareOpened, { open, close }] = useDisclosure(false);
 
   // Create a currency number formatter.
   const formatter = new Intl.NumberFormat('en-US', {
@@ -48,6 +51,16 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ opened, onClose, notif
         <Text ta="center" c="dimmed">Your cart is empty</Text>
       ) : (
         <>
+          <Group grow mb="sm" justify='space-around'>
+          <Button
+            variant="light"
+            leftSection={<IconShare size={14} />}
+            rightSection={<IconArrowRight size={14} />}
+            onClick={open}
+          >Share Cart</Button>
+          </Group>
+          { shareOpened && <UserSelectList 
+            onClose={close} onShareSubmit={handleCheckout} /> }
           {cartItems.map((item, key) => (
             <Group grow key={key} gap="xs" justify="space-between" mb="sm">
               <Text truncate="end">{item.name}</Text>
