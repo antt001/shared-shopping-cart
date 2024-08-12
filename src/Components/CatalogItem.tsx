@@ -26,6 +26,7 @@ export const CatalogItem: React.FC<CatalogItemProps> = ({ item, onCartOpen }) =>
       name: item.name,
       price: Number(item.price.replace(/[^0-9\.]+/g, "")),
       quantity: 1,  // Start with a default quantity of 1
+      timestamp: Date.now(),
     });
     onCartOpen();
   };

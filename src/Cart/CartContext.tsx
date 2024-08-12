@@ -9,6 +9,7 @@ interface CartItem {
   name: string;
   price: number;
   quantity: number;
+  timestamp: number;
 }
 
 interface UserCart {

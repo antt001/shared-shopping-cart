@@ -8,12 +8,9 @@
  */
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { beforeUserCreated } from "firebase-functions/v2/identity";
+import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as logger from "firebase-functions/logger";
 import * as firebaseAdmin from "firebase-admin";
-
-
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
 
 let app: firebaseAdmin.app.App | null = null;
 
@@ -23,6 +20,14 @@ const getApp = () => {
   }
   return app;
 };
+
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  timestamp: number;
+}
 
 export const addUserRole = beforeUserCreated(async (event) => {
   const user = event.data;
@@ -90,5 +95,34 @@ export const updateUserRole = onCall(async (request) => {
   } catch (error) {
     logger.error(error);
     throw new HttpsError("unknown", "Failed to update role.");
+  }
+});
+
+export const clearExpiredCartItems = onSchedule("every 24 hours", async () => {
+  const app = getApp();
+  const now = Date.now();
+  const cutoff = now - 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds;
+
+  try {
+    const carts = await firebaseAdmin.firestore(app)
+      .collection("carts")
+      .get();
+    const promises: Promise<any>[] = [];
+
+    carts.forEach(cart => {
+      const cartData = cart.data();
+      const expiredItems = cartData.items.filter((item:CartItem) => item.timestamp < cutoff);
+      if (expiredItems.length > 0) {
+        promises.push(firebaseAdmin.firestore(app)
+          .collection("carts")
+          .doc(cart.id)
+          .update({
+            items: firebaseAdmin.firestore.FieldValue.arrayRemove(...expiredItems),
+          }));
+      }
+    });
+    await Promise.all(promises);
+  } catch (error) {
+    logger.error(error);
   }
 });
