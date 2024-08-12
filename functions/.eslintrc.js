@@ -17,6 +17,10 @@ module.exports = {
     project: ["tsconfig.json", "tsconfig.dev.json"],
     sourceType: "module",
   },
+  files: [
+    "**/*.ts", 
+    "**/*.js"
+  ],
   ignorePatterns: [
     "/lib/**/*", // Ignore built files.
     "/generated/**/*", // Ignore generated files.
