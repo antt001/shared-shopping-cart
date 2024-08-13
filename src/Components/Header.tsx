@@ -17,6 +17,7 @@ const Header: React.FC<HeaderProps> = ({ onCartOpen }) => {
     } catch (error) {
       console.error('Error logging out:', error);
     }
+    window.location.reload();
   };
 
   return (

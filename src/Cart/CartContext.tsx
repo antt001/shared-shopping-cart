@@ -110,13 +110,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (cartDoc.exists()) {
       const loadedItems = cartDoc.data().items
       const cartSharedWith = cartDoc.data().users || [];
-      setSelectedCart(userId);
       setCartUsers(cartSharedWith);
       setCartItems(loadedItems || []);
     }
+    setSelectedCart(userId);
   };
 
   const saveCart = async (id: string, items: CartItem[]) => {
+    console.log('Saving cart for user:', id);
     await setDoc(doc(db, 'carts', id), { items }, { merge: true });
   };
 

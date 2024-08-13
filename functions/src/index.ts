@@ -17,6 +17,7 @@ let app: firebaseAdmin.app.App | null = null;
 const getApp = () => {
   if (!app) {
     app = firebaseAdmin.initializeApp();
+    firebaseAdmin.firestore(app).settings({ ignoreUndefinedProperties: true })
   }
   return app;
 };
