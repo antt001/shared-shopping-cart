@@ -11,9 +11,7 @@ interface CartSidebarProps {
   notify: (message: string) => void;
 }
 export const CartSidebar: React.FC<CartSidebarProps> = ({ opened, onClose, notify }) => {
-  const { 
-    cartUsers,
-    cartItems, 
+  const {  
     userCarts,
     selectedCart,
     updateItemQuantity, 
@@ -56,6 +54,9 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ opened, onClose, notif
   };
 
   const sharedCarts = Object.keys(userCarts);
+
+  const cartItems = selectedCart ? userCarts[selectedCart].items : [];
+  const cartUsers = selectedCart ? userCarts[selectedCart].users : [];
 
   return (
     <Drawer opened={opened} onClose={onClose}

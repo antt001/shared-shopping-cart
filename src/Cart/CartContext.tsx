@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth, firestore as db } from '../firebase-config';
 import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 
 
 interface CartItem {
@@ -23,10 +23,8 @@ interface UserCartsMap {
 }
 
 interface CartContextType {
-  cartUsers: string[];
   userCarts: UserCartsMap;
   selectedCart: string | null;
-  cartItems: CartItem[];
   addItem: (item: CartItem) => void;
   updateItemQuantity: (id: string, quantity: number) => void;
   removeItem: (id: string) => void;
@@ -39,16 +37,13 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [selectedCart, setSelectedCart] = useState<string | null>(null);
-  const [cartUsers, setCartUsers] = useState<string[]>([]);
-  const [user, setUser] = useState<User | null>(null);
   const [userCarts, setUserCarts] = useState<UserCartsMap>({});
   const [loading, setLoading] = useState(true); // Loading state
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+      // setUser(currentUser);
       if (currentUser) {
         fetchCarts(currentUser.uid);
       } else {
@@ -60,19 +55,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
-    if (user && selectedCart && !loading) {
-      saveCart(selectedCart, cartItems);
+    if (selectedCart && !loading) {
+      saveCart(selectedCart, userCarts[selectedCart].items);
     }
-  }, [cartItems, user, selectedCart, loading]);
+  }, [userCarts, selectedCart, loading]);
 
   const fetchCarts = async (userId: string) => {
     const carts = await fetchUserCarts(userId);
     await loadCart(userId);
-    if (Object.keys(carts).length > 0 || selectedCart) {
-      setUserCarts({
+    if (Object.keys(carts).length > 0) {
+      setUserCarts((prevCarts) => ({
+        ...prevCarts,
         ...carts,
-        [userId]: { id: userId, items: cartItems, users: cartUsers }
-      });
+      }));
     }
     setLoading(false); // Loading complete
   }
@@ -82,8 +77,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const cart: UserCart = userCarts[cartId];
     if (cart) {
       setSelectedCart(cartId);
-      setCartItems(cart.items);
-      setCartUsers(cart.users);
     }
     setLoading(false);
   }
@@ -107,12 +100,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loadCart = async (userId: string) => {
     console.log('Loading cart for user:', userId);
     const cartDoc = await getDoc(doc(db, 'carts', userId));
+    let loadedItems: CartItem[] = [];
+    let cartSharedWith: string[] = [];
     if (cartDoc.exists()) {
-      const loadedItems = cartDoc.data().items
-      const cartSharedWith = cartDoc.data().users || [];
-      setCartUsers(cartSharedWith);
-      setCartItems(loadedItems || []);
+      loadedItems = cartDoc.data().items
+      cartSharedWith = cartDoc.data().users;
     }
+    setUserCarts({[userId]: { id: userId, items: loadedItems, users: cartSharedWith }});
     setSelectedCart(userId);
   };
 
@@ -122,27 +116,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addItem = (item: CartItem) => {
-    setCartItems((prevItems) => {
-      const existingItem = prevItems.find(cartItem => cartItem.id === item.id);
-      if (existingItem) {
-        // If the item already exists, increase its quantity
-        return prevItems.map(cartItem =>
-          cartItem.id === item.id
-            ? { ...cartItem, quantity: cartItem.quantity + 1 }
-            : cartItem
-        );
-      } else {
-        // If the item doesn't exist, add it to the cart
-        return [...prevItems, item];
-      }
-    });
     if (selectedCart) {
       setUserCarts((prevCarts) => {
+        const selectedCartItems = prevCarts[selectedCart].items
+        const existingItemIndex = selectedCartItems.findIndex(cartItem => cartItem.id === item.id);
+        if (existingItemIndex !== -1) {
+          selectedCartItems[existingItemIndex].quantity += 1;
+        } else {
+          selectedCartItems.push(item);
+        }
         return {
           ...prevCarts,
           [selectedCart]: {
             ...prevCarts[selectedCart],
-            items: [...prevCarts[selectedCart].items, item]
+            items: selectedCartItems,
           }
         }
       })
@@ -151,27 +138,71 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateItemQuantity = (id: string, quantity: number) => {
-    setCartItems((prevItems) =>
-      prevItems.map((item) =>
-        item.id === id ? { ...item, quantity } : item
-      )
-    );
+    if (selectedCart) {
+      setUserCarts((prevCarts) => {
+        return {
+          ...prevCarts,
+          [selectedCart]: {
+            ...prevCarts[selectedCart],
+            items: prevCarts[selectedCart].items.map((item) =>
+              item.id === id ? { ...item, quantity } : item
+            )
+          }
+        }
+      })
+    }
   };
 
   const removeItem = (id: string) => {
-    setCartItems((prevItems) => prevItems.filter((item) => item.id !== id));
+    if (selectedCart) {
+      setUserCarts((prevCarts) => {
+        return {
+          ...prevCarts,
+          [selectedCart]: {
+            ...prevCarts[selectedCart],
+            items: prevCarts[selectedCart].items.filter((item) => item.id !== id)
+          }
+        }
+      })
+    }
+  };
+
+  const setCartUsers = (users: string[]) => {
+    if (selectedCart) {
+      setUserCarts((prevCarts) => {
+        return {
+          ...prevCarts,
+          [selectedCart]: {
+            ...prevCarts[selectedCart],
+            users
+          }
+        }
+      })
+    }
   };
 
   const clearCart = () => {
-    setCartItems([]);
+    if (selectedCart) {
+      setUserCarts((prevCarts) => {
+        return {
+          ...prevCarts,
+          [selectedCart]: {
+            ...prevCarts[selectedCart],
+            items: []
+          }
+        }
+      })
+    }
   };
 
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = selectedCart ? 
+    userCarts[selectedCart].
+      items
+      .reduce((sum, item) => sum + item.price * item.quantity, 0) : 
+    0;
 
   return (
     <CartContext.Provider value={{ 
-      cartUsers, 
-      cartItems, 
       userCarts, 
       selectedCart, 
       addItem, 
