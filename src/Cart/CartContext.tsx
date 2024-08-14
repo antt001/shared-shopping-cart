@@ -90,8 +90,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ...acc,
       [doc.id]: {
         id: doc.id,
-        items: doc.data().items,
-        users: doc.data().users
+        items: doc.data().items || [],
+        users: doc.data().users || [],
       }
     }), {});
     return cartsList;
@@ -103,8 +103,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let loadedItems: CartItem[] = [];
     let cartSharedWith: string[] = [];
     if (cartDoc.exists()) {
-      loadedItems = cartDoc.data().items
-      cartSharedWith = cartDoc.data().users;
+      loadedItems = cartDoc.data().items || [];
+      cartSharedWith = cartDoc.data().users || [];
     }
     setUserCarts({[userId]: { id: userId, items: loadedItems, users: cartSharedWith }});
     setSelectedCart(userId);
